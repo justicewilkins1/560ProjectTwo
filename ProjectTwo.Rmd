@@ -1,0 +1,112 @@
+---
+title: "Project Two"
+author: "Justice Wilkins"
+date: "3/8/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For this project the goal is to generate several classification models and compare them all to gather a final predictor for the actual data set.
+
+The data set we will be working with is the BreastCancer data set within mlbench. For this, each classification will predict the whether the class is benign or malignant. Using 5 seperate classifcation models, we will conclude by using the most frequently predictyed value for each model. 
+
+Load and Clean the Data
+The code below is the loading and cleaning of the data set. We only need to remove the ID and the missing values. We remove the unique identifier because it is useless for use of the models. We remove the missing values in order to make sure we prevent any errors within the classifcation models. 
+
+```{r}
+require(mlbench)
+# load the data set
+data(BreastCancer)
+# some algorithms don't like missing values, so remove rows with missing values
+BreastCancer <- na.omit(BreastCancer) 
+# remove the unique identifier, which is useless and would confuse the machine learning algorithms
+BreastCancer$Id <- NULL 
+
+```
+
+Support Vector Classification -
+The code below is the Support Vector Classification. Within this model we create the model and then put together the prediction. The final table displays the predicted Class for the BreastCancer data set. 
+
+```{r}
+library(e1071)
+mysvm <- svm(BreastCancer$Class ~ ., BreastCancer)
+mysvm.pred <- predict(mysvm, BreastCancer)
+table(mysvm.pred,BreastCancer$Class)
+```
+
+Naive Bayes -
+The code below is the Naive Bayes Classification. Within this model we create the model and then put together the prediction. The final table displays the predicted Class for the BreastCancer data set. 
+
+```{r}
+library(klaR)
+mynb <- NaiveBayes(BreastCancer$Class ~ ., BreastCancer)
+mynb.pred <- predict(mynb,BreastCancer)
+table(mynb.pred$class,BreastCancer$Class)
+
+```
+
+Decision Tree -
+The code below is the Decision Tree Classification. Within this model we create the model and then put together the prediction. The final table displays the predicted Class for the BreastCancer data set. 
+
+```{r}
+library(MASS)
+#Decision trees
+library(rpart)
+mytree <- rpart(BreastCancer$Class ~ ., BreastCancer)
+#plot(mytree); text(mytree) # in "BreastCancer_tree.ps"
+#summary(mytree)
+mytree.pred <- predict(mytree,BreastCancer,type="class")
+table(mytree.pred,BreastCancer$Class)
+```
+
+Regularized Discriminant Analysis -
+The code below is the Regularized Discriminant Analysis Classification. Within this model we create the model and then put together the prediction. The final table displays the predicted Class for the BreastCancer data set. 
+
+```{r}
+#Regularised Discriminant Analysis
+library(klaR)
+myrda <- rda(BreastCancer$Class ~ ., BreastCancer)
+myrda.pred <- predict(myrda, BreastCancer)
+table(myrda.pred$class,BreastCancer$Class)
+
+as.data.frame(myrda.pred$class)
+            
+```
+
+Random Forests -
+The code below is the Random Forests Classification. Within this model we create the model and then put together the prediction. The final table displays the predicted Class for the BreastCancer data set. 
+
+```{r}
+#Random Forests
+library(randomForest)
+myrf <- randomForest(BreastCancer$Class ~ .,BreastCancer)
+myrf.pred <- predict(myrf, BreastCancer)
+table(myrf.pred, BreastCancer$Class)
+```
+
+Selecting the most frequent predicted value - 
+The code below generates a data frame of all of our predicted values from each classification method. The "Class.df" shows the full data frame of each classifcation method. After joining th epredicted values, we now want to find out which value is guessed most frequent for each column. The "Class.Mode" finds the most frequent number or Mode for each row. Finally, we want to place all of the predicted values from each classifcation method and bump the Class.Mode up to the final data frame. The "Freq.df" displays all of the predicted values as well as the most frequently predicted values under the Class.Mode column. 
+
+```{r}
+#Create Column Names For Classifcation Models
+Naiyes.m <- mynb.pred$class
+SVM.m <- mysvm.pred
+DTree.m <- mytree.pred
+RDA.m <- myrda.pred$class
+rf.m <- myrf.pred
+
+#Create data frame - Make sure to transpose rows and columns, and create as a data frame with the classifcations
+Class.df <- t(as.data.frame(rbind(Naiyes.m, SVM.m, DTree.m, RDA.m, rf.m)))
+
+
+#Select number with highest frequenct (MODE of all classications)
+Class.Mode <- apply(Class.df, 1, function(idx) which.max(tabulate(idx)))
+
+#Insert Class Frequency (Mode) into the classifcation model data frame
+Freq.df <- t(as.data.frame(rbind(mynb.pred$class, mysvm.pred, mytree.pred, myrda.pred$class, myrf.pred, Class.Mode)))
+```
+
+
